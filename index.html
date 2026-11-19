@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Diario">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2b6a50">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Diario alimentare</title>
+<style>
+:root {
+  /* Layout: una colonna a schermo intero, intestazione in alto, barra di navigazione in basso. */
+  --bg: #f3f5f2;
+  --surface: #ffffff;
+  --ink: #1a2420;
+  --muted: #627068;
+  --line: #dde3de;
+  --accent: #2b6a50;
+  --accent-ink: #ffffff;
+  --warn: #b4442c;
+  --font-display: ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121815; --surface: #1b2420; --ink: #e8efea; --muted: #94a39a;
+    --line: #2b3832; --accent: #6fcf9f; --accent-ink: #0f1a14; --warn: #ef8a72;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121815; --surface: #1b2420; --ink: #e8efea; --muted: #94a39a;
+  --line: #2b3832; --accent: #6fcf9f; --accent-ink: #0f1a14; --warn: #ef8a72;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; -webkit-text-size-adjust: 100%; }
+#app { height: 100%; display: flex; flex-direction: column; max-width: 640px; margin: 0 auto; }
+header { padding: calc(env(safe-area-inset-top) + 14px) 16px 10px; }
+h1 { font-family: var(--font-display); font-size: 26px; line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-size: 18px; margin: 0; text-wrap: balance; }
+main { flex: 1; overflow-y: auto; padding: 4px 16px 24px; -webkit-overflow-scrolling: touch; }
+nav { display: flex; border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom); }
+nav button { flex: 1; border: 0; background: none; color: var(--muted); font: 600 13px var(--font-body); padding: 12px 4px; min-height: 48px; }
+nav button[aria-current="true"] { color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
+button { font-family: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.daybar { display: flex; align-items: center; gap: 8px; }
+.daybar .title { flex: 1; text-align: center; font-weight: 600; text-wrap: balance; }
+.icon-btn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 20px; }
+.summary { display: flex; gap: 16px; color: var(--muted); font-size: 14px; margin: 10px 2px 14px; justify-content: center; font-variant-numeric: tabular-nums; }
+.summary b { color: var(--ink); }
+.meal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
+.meal-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 8px; gap: 8px; }
+.add { border: 1px solid var(--accent); color: var(--accent); background: none; border-radius: 999px; font-weight: 600; font-size: 14px; padding: 8px 14px; min-height: 36px; }
+.entry { display: block; width: 100%; text-align: left; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; padding: 10px 14px; font-size: 16px; }
+.entry .row { display: flex; gap: 10px; justify-content: space-between; }
+.entry .time { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.entry .kcal { color: var(--muted); font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.entry .note { color: var(--muted); font-size: 14px; font-style: italic; margin-top: 2px; }
+.empty { color: var(--muted); font-size: 14px; padding: 0 14px 12px; }
+label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 12px 0 4px; }
+input[type=text], input[type=time], input[type=date], input[type=number], textarea, select, input[type=search] {
+  width: 100%; font: 16px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px;
+}
+textarea { resize: vertical; min-height: 72px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.card p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.btn { display: block; width: 100%; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 16px; padding: 13px; min-height: 48px; margin-top: 14px; }
+.btn.secondary { background: none; color: var(--accent); border: 1px solid var(--accent); }
+.btn.danger { background: none; color: var(--warn); border: 1px solid var(--warn); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.check { display: flex; gap: 10px; align-items: center; margin: 12px 0 0; font-size: 16px; font-weight: 400; color: var(--ink); }
+.check input { width: 22px; height: 22px; accent-color: var(--accent); }
+.dayrow { display: flex; justify-content: space-between; gap: 10px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); color: inherit; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; font-size: 16px; }
+.dayrow small { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sheet { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
+.sheet[hidden] { display: none; }
+.sheet-card { background: var(--surface); width: 100%; max-width: 640px; max-height: 92%; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px); }
+.toast { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 70px); background: var(--ink); color: var(--bg); padding: 12px 14px; border-radius: 12px; font-size: 14px; z-index: 20; max-width: 608px; margin: 0 auto; }
+.toast[hidden] { display: none; }
+.banner { background: var(--surface); border: 1px solid var(--warn); color: var(--warn); border-radius: 12px; padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
+@media (prefers-reduced-motion: no-preference) { .sheet-card { animation: up .18s ease-out; } @keyframes up { from { transform: translateY(24px); opacity: .6; } } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hdr"></header>
+  <main id="main"></main>
+  <nav>
+    <button data-nav="day" id="n-day">Diario</button>
+    <button data-nav="hist" id="n-hist">Storico</button>
+    <button data-nav="exp" id="n-exp">Esporta</button>
+  </nav>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <h2 id="sheet-title">Nuova voce</h2>
+    <label for="f-meal">Pasto</label>
+    <select id="f-meal"></select>
+    <div class="grid2">
+      <div><label for="f-time">Ora</label><input type="time" id="f-time"></div>
+      <div><label for="f-kcal">Calorie (facoltativo)</label><input type="number" id="f-kcal" inputmode="numeric" min="0" placeholder="kcal"></div>
+    </div>
+    <label for="f-text">Cosa hai mangiato o bevuto</label>
+    <textarea id="f-text" placeholder="Es. 2 fette di pane integrale, ricotta, caffè"></textarea>
+    <label for="f-note">Note (facoltativo)</label>
+    <input type="text" id="f-note" placeholder="Es. fame nervosa, fuori casa, sazietà">
+    <button class="btn" id="f-save">Salva</button>
+    <button class="btn secondary" id="f-cancel">Annulla</button>
+    <button class="btn danger" id="f-del" hidden>Elimina voce</button>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+/* ---------- Dati e memoria locale ---------- */
+const KEY = "diario-alimentare-v1";
+const MEALS = [
+  { id: "colazione", n: "Colazione", t: "08:00" },
+  { id: "spuntino-m", n: "Spuntino di metà mattina", t: "10:30" },
+  { id: "pranzo", n: "Pranzo", t: "13:00" },
+  { id: "merenda", n: "Merenda", t: "16:30" },
+  { id: "cena", n: "Cena", t: "20:00" },
+  { id: "fuori", n: "Dopo cena e fuori pasto", t: "22:00" }
+];
+const mealName = id => (MEALS.find(m => m.id === id) || MEALS[0]).n;
+let store = { entries: [], notes: {} };
+let storageOk = true;
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const d = JSON.parse(raw); store.entries = d.entries || []; store.notes = d.notes || {}; }
+  } catch (e) { storageOk = false; }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(store)); }
+  catch (e) { storageOk = false; toast("Memoria del browser non disponibile: scarica il backup per non perdere i dati."); }
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/* ---------- Utilità ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pad = n => String(n).padStart(2, "0");
+const isoOf = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const parseIso = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fmtLong = iso => cap(parseIso(iso).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+const fmtShort = iso => parseIso(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+const addDays = (iso, n) => { const d = parseIso(iso); d.setDate(d.getDate() + n); return isoOf(d); };
+const today = () => isoOf(new Date());
+const dayEntries = iso => store.entries.filter(e => e.date === iso).sort((a, b) => (a.time || "").localeCompare(b.time || "") || a.id.localeCompare(b.id));
+const kcalSum = list => list.reduce((s, e) => s + (Number(e.kcal) || 0), 0);
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 4000); }
+
+/* ---------- Stato interfaccia ---------- */
+let view = "day", curDate = today(), search = "";
+const exp = { mode: "all", from: "", to: "", kcal: true, notes: true, confirmDel: false };
+
+function render() {
+  ["day", "hist", "exp"].forEach(v => { const b = $("#n-" + v); b.setAttribute("aria-current", String(v === view)); });
+  const main = $("#main"), hdr = $("#hdr");
+  const keepScroll = main.scrollTop;
+  if (view === "day") renderDay(hdr, main);
+  else if (view === "hist") renderHist(hdr, main);
+  else renderExp(hdr, main);
+  main.scrollTop = keepScroll;
+}
+
+function renderDay(hdr, main) {
+  const list = dayEntries(curDate);
+  const kc = kcalSum(list);
+  hdr.innerHTML = `<div class="daybar">
+      <button class="icon-btn" data-act="prev" aria-label="Giorno precedente">‹</button>
+      <div class="title">${esc(fmtLong(curDate))}${curDate === today() ? "<br><small style='color:var(--accent)'>Oggi</small>" : ""}</div>
+      <button class="icon-btn" data-act="next" aria-label="Giorno successivo">›</button>
+    </div>
+    <div class="grid2" style="margin-top:8px">
+      <input type="date" id="jump" value="${curDate}" aria-label="Vai a una data">
+      <button class="add" data-act="todaybtn" style="border-radius:10px">Vai a oggi</button>
+    </div>`;
+  let h = "";
+  if (!storageOk) h += `<div class="banner">Questo browser non permette di salvare i dati. Usa Esporta per scaricare il backup prima di chiudere.</div>`;
+  h += `<div class="summary"><span><b>${list.length}</b> ${list.length === 1 ? "voce" : "voci"}</span>${kc ? `<span><b>${kc}</b> kcal</span>` : ""}</div>`;
+  MEALS.forEach(m => {
+    const items = list.filter(e => e.meal === m.id);
+    h += `<section class="meal"><div class="meal-head"><h2>${esc(m.n)}</h2><button class="add" data-act="add" data-meal="${m.id}">+ Aggiungi</button></div>`;
+    if (!items.length) h += `<div class="empty">Nessuna voce</div>`;
+    items.forEach(e => {
+      h += `<button class="entry" data-act="edit" data-id="${e.id}"><div class="row"><span class="time">${esc(e.time || "")}</span><span class="kcal">${e.kcal ? esc(e.kcal) + " kcal" : ""}</span></div>
+        <div>${esc(e.text).replace(/\n/g, "<br>")}</div>${e.note ? `<div class="note">${esc(e.note)}</div>` : ""}</button>`;
+    });
+    h += `</section>`;
+  });
+  h += `<div class="card"><label for="daynote" style="margin-top:0">Note del giorno</label>
+    <textarea id="daynote" placeholder="Acqua, sonno, umore, sintomi, osservazioni">${esc(store.notes[curDate] || "")}</textarea></div>`;
+  main.innerHTML = h;
+}
+
+function allDates() {
+  const s = new Set(store.entries.map(e => e.date));
+  Object.keys(store.notes).forEach(d => { if (store.notes[d] && store.notes[d].trim()) s.add(d); });
+  return [...s].sort();
+}
+
+function renderHist(hdr, main) {
+  hdr.innerHTML = `<h1>Storico</h1><div style="margin-top:10px"><input type="search" id="q" placeholder="Cerca un alimento o una nota" value="${esc(search)}" aria-label="Cerca"></div>`;
+  const q = search.trim().toLowerCase();
+  let rows = "";
+  allDates().reverse().forEach(d => {
+    const list = dayEntries(d);
+    let count = list.length, extra = "";
+    if (q) {
+      const hit = list.filter(e => (e.text + " " + (e.note || "") + " " + mealName(e.meal)).toLowerCase().includes(q));
+      const noteHit = (store.notes[d] || "").toLowerCase().includes(q);
+      if (!hit.length && !noteHit) return;
+      count = hit.length; extra = hit.slice(0, 2).map(e => esc(e.text.split("\n")[0].slice(0, 60))).join(" · ");
+    }
+    const kc = kcalSum(list);
+    rows += `<button class="dayrow" data-act="open" data-date="${d}"><span><b>${esc(fmtLong(d))}</b>${extra ? `<br><small style="white-space:normal">${extra}</small>` : ""}</span><small>${count} ${count === 1 ? "voce" : "voci"}${kc ? " · " + kc + " kcal" : ""}</small></button>`;
+  });
+  main.innerHTML = rows || `<div class="empty" style="padding:16px 2px">${q ? "Nessun risultato." : "Ancora nessuna voce. Aggiungi il primo pasto dalla scheda Diario."}</div>`;
+}
+
+function renderExp(hdr, main) {
+  hdr.innerHTML = `<h1>Esporta e backup</h1>`;
+  const dates = allDates();
+  main.innerHTML = `
+  <div class="card"><h2>PDF del diario</h2>
+    <p>Il PDF viene creato sul tuo telefono. Nessun dato lascia il dispositivo.</p>
+    <label class="check"><input type="radio" name="mode" value="all" ${exp.mode === "all" ? "checked" : ""}> Tutto il diario${dates.length ? " (" + dates.length + " giorni)" : ""}</label>
+    <label class="check"><input type="radio" name="mode" value="range" ${exp.mode === "range" ? "checked" : ""}> Solo un periodo</label>
+    <div class="grid2" ${exp.mode === "range" ? "" : "hidden"} id="rng">
+      <div><label for="x-from">Dal</label><input type="date" id="x-from" value="${exp.from}"></div>
+      <div><label for="x-to">Al</label><input type="date" id="x-to" value="${exp.to}"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="x-kcal" ${exp.kcal ? "checked" : ""}> Includi le calorie</label>
+    <label class="check"><input type="checkbox" id="x-notes" ${exp.notes ? "checked" : ""}> Includi le note</label>
+    <button class="btn" data-act="pdf">Scarica PDF</button>
+  </div>
+  <div class="card"><h2>Backup dei dati</h2>
+    <p>I dati restano nella memoria di questo browser. Scarica ogni tanto una copia: se cancelli i dati del sito o cambi telefono puoi ripristinarla qui.</p>
+    <button class="btn secondary" data-act="backup">Scarica backup (.json)</button>
+    <label for="restore" style="margin-top:16px">Ripristina da un backup</label>
+    <input type="file" id="restore" accept=".json,application/json">
+  </div>
+  <div class="card"><h2>Cancella tutto</h2>
+    <p>Elimina tutte le voci da questo dispositivo. L'operazione non si può annullare.</p>
+    ${exp.confirmDel ? `<button class="btn danger" data-act="wipe2">Sì, cancella tutto</button><button class="btn secondary" data-act="wipe0">Annulla</button>` : `<button class="btn danger" data-act="wipe1">Cancella tutti i dati</button>`}
+  </div>`;
+}
+
+/* ---------- Scheda di inserimento ---------- */
+let editing = null;
+function openSheet(entry, meal) {
+  editing = entry || null;
+  $("#sheet-title").textContent = entry ? "Modifica voce" : "Nuova voce";
+  $("#f-meal").innerHTML = MEALS.map(m => `<option value="${m.id}">${esc(m.n)}</option>`).join("");
+  const mid = entry ? entry.meal : meal;
+  $("#f-meal").value = mid;
+  const now = new Date();
+  $("#f-time").value = entry ? (entry.time || "") : (curDate === today() ? pad(now.getHours()) + ":" + pad(now.getMinutes()) : MEALS.find(m => m.id === mid).t);
+  $("#f-kcal").value = entry && entry.kcal ? entry.kcal : "";
+  $("#f-text").value = entry ? entry.text : "";
+  $("#f-note").value = entry ? (entry.note || "") : "";
+  $("#f-del").hidden = !entry;
+  $("#sheet").hidden = false;
+  setTimeout(() => $("#f-text").focus(), 50);
+}
+function closeSheet() { $("#sheet").hidden = true; editing = null; }
+$("#f-cancel").onclick = closeSheet;
+$("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") closeSheet(); });
+$("#f-save").onclick = () => {
+  const text = $("#f-text").value.trim();
+  if (!text) { toast("Scrivi cosa hai mangiato."); $("#f-text").focus(); return; }
+  const data = { meal: $("#f-meal").value, time: $("#f-time").value, kcal: $("#f-kcal").value ? Math.round(Number($("#f-kcal").value)) : 0, text, note: $("#f-note").value.trim() };
+  if (editing) Object.assign(editing, data);
+  else store.entries.push({ id: uid(), date: curDate, ...data });
+  save(); closeSheet(); render();
+};
+$("#f-del").onclick = () => {
+  if (!editing) return;
+  store.entries = store.entries.filter(e => e.id !== editing.id);
+  save(); closeSheet(); render();
+};
+
+/* ---------- Eventi ---------- */
+document.addEventListener("click", ev => {
+  const nav = ev.target.closest("[data-nav]");
+  if (nav) { view = nav.dataset.nav; render(); $("#main").scrollTop = 0; return; }
+  const b = ev.target.closest("[data-act]");
+  if (!b) return;
+  const a = b.dataset.act;
+  if (a === "prev") { curDate = addDays(curDate, -1); render(); }
+  else if (a === "next") { curDate = addDays(curDate, 1); render(); }
+  else if (a === "todaybtn") { curDate = today(); render(); }
+  else if (a === "add") openSheet(null, b.dataset.meal);
+  else if (a === "edit") openSheet(store.entries.find(e => e.id === b.dataset.id));
+  else if (a === "open") { curDate = b.dataset.date; view = "day"; render(); $("#main").scrollTop = 0; }
+  else if (a === "pdf") exportPdf();
+  else if (a === "backup") exportBackup();
+  else if (a === "wipe1") { exp.confirmDel = true; render(); }
+  else if (a === "wipe0") { exp.confirmDel = false; render(); }
+  else if (a === "wipe2") { store = { entries: [], notes: {} }; save(); exp.confirmDel = false; render(); toast("Dati cancellati."); }
+});
+document.addEventListener("input", ev => {
+  const t = ev.target;
+  if (t.id === "daynote") { store.notes[curDate] = t.value; save(); }
+  else if (t.id === "q") { search = t.value; const pos = t.selectionStart; renderHist($("#hdr"), $("#main")); const q = $("#q"); q.focus(); q.setSelectionRange(pos, pos); }
+});
+document.addEventListener("change", ev => {
+  const t = ev.target;
+  if (t.id === "jump" && t.value) { curDate = t.value; render(); }
+  else if (t.name === "mode") { exp.mode = t.value; render(); }
+  else if (t.id === "x-from") exp.from = t.value;
+  else if (t.id === "x-to") exp.to = t.value;
+  else if (t.id === "x-kcal") exp.kcal = t.checked;
+  else if (t.id === "x-notes") exp.notes = t.checked;
+  else if (t.id === "restore") restoreBackup(t.files && t.files[0]);
+});
+
+/* ---------- Download ---------- */
+async function saveFile(filename, data) {
+  const type = filename.endsWith(".pdf") ? "application/pdf" : "application/json";
+  const blob = data instanceof Blob ? data : new Blob([data], { type });
+  try {
+    const f = new File([blob], filename, { type });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f] }); return true; }
+  } catch (e) { if (e && e.name === "AbortError") return false; }
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return true;
+  } catch (e) { toast("Salvataggio non riuscito. Riprova."); return false; }
+}
+function exportBackup() {
+  const json = JSON.stringify({ app: "diario-alimentare", version: 1, exportedAt: new Date().toISOString(), ...store }, null, 2);
+  saveFile("diario-alimentare-backup-" + today() + ".json", json);
+}
+function restoreBackup(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!Array.isArray(d.entries)) throw new Error();
+      const ids = new Set(store.entries.map(e => e.id));
+      let added = 0;
+      d.entries.forEach(e => { if (e && e.id && e.date && e.text && !ids.has(e.id)) { store.entries.push(e); added++; } });
+      Object.keys(d.notes || {}).forEach(k => { if (!store.notes[k]) store.notes[k] = d.notes[k]; });
+      save(); render(); toast("Backup ripristinato: " + added + " voci aggiunte.");
+    } catch (e) { toast("File non valido. Scegli un backup scaricato da questa app."); }
+  };
+  r.readAsText(file);
+}
+function exportPdf() {
+  let dates = allDates();
+  if (exp.mode === "range") {
+    if (!exp.from || !exp.to || exp.from > exp.to) { toast("Scegli un periodo valido (data iniziale prima di quella finale)."); return; }
+    dates = dates.filter(d => d >= exp.from && d <= exp.to);
+  }
+  if (!dates.length) { toast("Non ci sono dati da esportare."); return; }
+  const bytes = buildPdf(dates, exp.kcal, exp.notes, exp.mode === "range" ? "Dal " + fmtShort(exp.from) + " al " + fmtShort(exp.to) : "Dal " + fmtShort(dates[0]) + " al " + fmtShort(dates[dates.length - 1]));
+  saveFile("diario-alimentare-" + today() + ".pdf", new Blob([bytes], { type: "application/pdf" })).then(ok => { if (ok) toast("PDF pronto."); });
+}
+
+/* ---------- Generatore PDF (nessuna libreria, tutto offline) ---------- */
+const HW = {32:278,33:278,34:355,35:556,36:556,37:889,38:667,39:191,40:333,41:333,42:389,43:584,44:278,45:333,46:278,47:278,58:278,59:278,60:584,61:584,62:584,63:556,64:1015,65:667,66:667,67:722,68:722,69:667,70:611,71:778,72:722,73:278,74:500,75:667,76:556,77:833,78:722,79:778,80:667,81:778,82:722,83:667,84:611,85:722,86:667,87:944,88:667,89:667,90:611,91:278,92:278,93:278,94:469,95:556,96:333,97:556,98:556,99:500,100:556,101:556,102:278,103:556,104:556,105:222,106:222,107:500,108:222,109:833,110:556,111:556,112:556,113:556,114:333,115:500,116:278,117:556,118:500,119:722,120:500,121:500,122:500,123:334,124:260,125:334,126:584};
+for (let c = 48; c <= 57; c++) HW[c] = 556;
+const CP = { "’": 0x92, "‘": 0x91, "“": 0x93, "”": 0x94, "–": 0x96, "—": 0x97, "€": 0x80, "…": 0x85, "•": 0x95 };
+function enc(s) {
+  let o = "";
+  for (const ch of String(s)) {
+    const c = ch.codePointAt(0);
+    if (c === 9) o += " ";
+    else if (c >= 32 && c < 127) o += ch;
+    else if (c >= 160 && c <= 255) o += ch;
+    else if (CP[ch]) o += String.fromCharCode(CP[ch]);
+    else if (c > 127) o += "?";
+  }
+  return o;
+}
+const pesc = s => s.replace(/[\\()]/g, m => "\\" + m);
+function tw(s, font, size) {
+  let w = 0;
+  for (const ch of s) {
+    const base = ch.normalize("NFD")[0];
+    w += HW[base.charCodeAt(0)] || 556;
+  }
+  return w * size / 1000 * (font === "F2" ? 1.06 : 1);
+}
+function wrap(text, font, size, maxW) {
+  const out = [];
+  String(text).split("\n").forEach(par => {
+    let line = "";
+    par.split(/\s+/).filter(Boolean).forEach(word => {
+      while (tw(word, font, size) > maxW) {
+        let cut = word.length;
+        while (cut > 1 && tw(word.slice(0, cut), font, size) > maxW) cut--;
+        if (line) { out.push(line); line = ""; }
+        out.push(word.slice(0, cut)); word = word.slice(cut);
+      }
+      const trial = line ? line + " " + word : word;
+      if (tw(trial, font, size) <= maxW) line = trial; else { out.push(line); line = word; }
+    });
+    out.push(line);
+  });
+  return out;
+}
+
+function buildPdf(dates, withKcal, withNotes, period) {
+  const W = 595.28, H = 841.89, M = 48, CW = W - 2 * M, X2 = M + 46, BOTTOM = M + 14;
+  const pages = []; let ops, y, contDay = null;
+  const txt = (x, yy, s, f, sz, g, right) => {
+    const t = enc(s);
+    if (right) x -= tw(s, f, sz);
+    ops.push("BT /" + f + " " + sz + " Tf " + g + " g " + x.toFixed(2) + " " + yy.toFixed(2) + " Td (" + pesc(t) + ") Tj ET");
+  };
+  const rule = (yy, g, w) => ops.push(g + " G " + w + " w " + M + " " + yy.toFixed(2) + " m " + (W - M) + " " + yy.toFixed(2) + " l S");
+  const dayHead = (d, suffix, kc) => {
+    txt(M, y - 12, fmtLong(d) + (suffix || ""), "F2", 12.5, 0.1);
+    if (kc && withKcal) txt(W - M, y - 12, "Totale: " + kc + " kcal", "F1", 10, 0.35, true);
+    rule(y - 18, 0.75, 0.6); y -= 28;
+  };
+  const newPage = () => { ops = []; pages.push(ops); y = H - M; };
+  const need = h => {
+    if (y - h < BOTTOM) { newPage(); if (contDay) dayHead(contDay.d, " (segue)", 0); }
+  };
+
+  newPage();
+  const totalEntries = dates.reduce((s, d) => s + dayEntries(d).length, 0);
+  txt(M, y - 22, "Diario alimentare", "F2", 24, 0.08); y -= 34;
+  txt(M, y - 10, period, "F1", 11, 0.3); y -= 16;
+  const gen = new Date().toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+  txt(M, y - 10, "Generato il " + gen + "  -  " + totalEntries + " voci in " + dates.length + " giorni", "F1", 9.5, 0.45); y -= 16;
+  if (withKcal) {
+    const withK = dates.filter(d => kcalSum(dayEntries(d)) > 0);
+    if (withK.length) {
+      const avg = Math.round(withK.reduce((s, d) => s + kcalSum(dayEntries(d)), 0) / withK.length);
+      txt(M, y - 10, "Media giornaliera: " + avg + " kcal (su " + withK.length + " giorni con calorie registrate)", "F1", 9.5, 0.45); y -= 16;
+    }
+  }
+  rule(y - 4, 0.6, 0.8); y -= 22;
+
+  dates.forEach(d => {
+    const list = dayEntries(d), kc = kcalSum(list);
+    contDay = { d };
+    need(28 + 40);
+    dayHead(d, "", kc);
+    list.forEach(e => {
+      const descL = wrap(e.text, "F1", 10.5, W - M - X2);
+      const noteL = withNotes && e.note ? wrap("Nota: " + e.note, "F3", 9, W - M - X2) : [];
+      const h = 14 + descL.length * 13 + noteL.length * 11.5 + 7;
+      need(h);
+      txt(M, y - 10, e.time || "", "F1", 9.5, 0.4);
+      txt(X2, y - 10, mealName(e.meal), "F2", 9.5, 0.1);
+      if (withKcal && e.kcal) txt(W - M, y - 10, e.kcal + " kcal", "F1", 9.5, 0.4, true);
+      let yy = y - 24;
+      descL.forEach(l => { txt(X2, yy, l, "F1", 10.5, 0.1); yy -= 13; });
+      noteL.forEach(l => { txt(X2, yy + 1, l, "F3", 9, 0.4); yy -= 11.5; });
+      y -= h;
+    });
+    const dn = withNotes ? (store.notes[d] || "").trim() : "";
+    if (dn) {
+      const nl = wrap(dn, "F3", 9.5, W - M - X2);
+      need(16 + nl.length * 12);
+      txt(M, y - 10, "Note del giorno", "F2", 9, 0.3);
+      let yy = y - 10;
+      nl.forEach(l => { txt(X2 + 20, yy, l, "F3", 9.5, 0.25); yy -= 12; });
+      y -= 16 + (nl.length - 1) * 12 + 4;
+    }
+    y -= 12;
+    contDay = null;
+  });
+
+  pages.forEach((p, i) => {
+    ops = p;
+    txt(M, 26, "Diario alimentare", "F1", 8, 0.55);
+    txt(W - M, 26, "Pagina " + (i + 1) + " di " + pages.length, "F1", 8, 0.55, true);
+  });
+
+  const objs = [];
+  objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  const kids = pages.map((_, i) => (7 + 2 * i) + " 0 R").join(" ");
+  objs[2] = "<< /Type /Pages /Kids [" + kids + "] /Count " + pages.length + " >>";
+  ["Helvetica", "Helvetica-Bold", "Helvetica-Oblique"].forEach((n, i) => {
+    objs[3 + i] = "<< /Type /Font /Subtype /Type1 /BaseFont /" + n + " /Encoding /WinAnsiEncoding >>";
+  });
+  pages.forEach((p, i) => {
+    const stream = p.join("\n");
+    objs[6 + 2 * i] = "<< /Length " + stream.length + " >>\nstream\n" + stream + "\nendstream";
+    objs[7 + 2 * i] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + W + " " + H + "] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents " + (6 + 2 * i) + " 0 R >>";
+  });
+  const info = objs.length;
+  objs[info] = "<< /Title (Diario alimentare) /Producer (Diario alimentare) >>";
+  let out = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+  const offs = [];
+  for (let i = 1; i < objs.length; i++) { offs[i] = out.length; out += i + " 0 obj\n" + objs[i] + "\nendobj\n"; }
+  const xref = out.length;
+  out += "xref\n0 " + objs.length + "\n0000000000 65535 f \n";
+  for (let i = 1; i < objs.length; i++) out += String(offs[i]).padStart(10, "0") + " 00000 n \n";
+  out += "trailer\n<< /Size " + objs.length + " /Root 1 0 R /Info " + info + " 0 R >>\nstartxref\n" + xref + "\n%%EOF";
+  const u8 = new Uint8Array(out.length);
+  for (let i = 0; i < out.length; i++) u8[i] = out.charCodeAt(i) & 255;
+  return u8;
+}
+
+load();
+render();
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
